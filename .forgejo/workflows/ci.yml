@@ -11,8 +11,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-    container: quay.io/fedora/fedora:43
+    runs-on: fedora-latest
 
     steps:
       - uses: actions/checkout@v6
@@ -34,8 +33,7 @@ jobs:
           weston -Bheadless -- ctest --test-dir build --verbose
 
   build-meson:
-    runs-on: ubuntu-latest
-    container: quay.io/fedora/fedora:43
+    runs-on: fedora-latest
 
     steps:
       - uses: actions/checkout@v6
@@ -56,8 +54,7 @@ jobs:
           weston -Bheadless -- meson test -C build --print-errorlogs
 
   coverage:
-    runs-on: ubuntu-latest
-    container: quay.io/fedora/fedora:43
+    runs-on: fedora-latest
 
     steps:
       - uses: actions/checkout@v6
@@ -68,8 +65,6 @@ jobs:
       - name: Install llvm
         run: |
           sudo dnf -y install llvm rustup bzip2 git
-          rustup-init -y
-          source "$HOME/.cargo/env"
           rustup component add llvm-tools
 
       - name: Setup grcov
@@ -92,16 +87,15 @@ jobs:
           source "$HOME/.cargo/env"
           glib-compile-schemas src/setup --targetdir=build/bin
           weston -Bheadless -- ctest --test-dir build --verbose
-          ./grcov . -s . -b . --keep-only 'src/*' --llvm  -t lcov -o coverage.lcov
+          ./grcov . -s . -b . --keep-only 'src/*' --llvm  -t markdown >> $GITHUB_STEP_SUMMARY
 
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v5
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      # - name: Upload coverage reports to Codecov
+      #   uses: codecov/codecov-action@v5
+      #   env:
+      #     CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   coverage-meson:
-    runs-on: ubuntu-latest
-    container: quay.io/fedora/fedora:43
+    runs-on: fedora-latest
 
     steps:
       - uses: actions/checkout@v6
@@ -121,15 +115,15 @@ jobs:
           weston -Bheadless -- meson test -C build --print-errorlogs
           ninja -C build coverage-xml
 
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v5
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      # - name: Upload coverage reports to Codecov
+      #   uses: codecov/codecov-action@v5
+      #   env:
+      #     CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   # https://github.com/orgs/community/discussions/26822
   results:
     if: ${{ always() }}
-    runs-on: ubuntu-latest
+    runs-on: fedora-latest
     name: Final Results
     needs: [build]
     steps:
