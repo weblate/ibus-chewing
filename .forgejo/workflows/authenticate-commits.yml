@@ -1,6 +1,6 @@
 name: authenticate-commits
 env:
-  TRUST_ROOT: e582b07e73f9376be102df97d46a70282763fe32
+  TRUST_ROOT: 72e04ea3d99b6e268ae2366d739d7f5e26f319b0
 on:
   pull_request:
     types: [opened, reopened, synchronize]
