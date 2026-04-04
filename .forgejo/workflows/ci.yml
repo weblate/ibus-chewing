@@ -26,6 +26,8 @@ jobs:
           cmake --build build -t install --verbose
 
       - name: Test
+        env:
+          XDG_RUNTIME_DIR: /tmp
         run: |
           glib-compile-schemas src/setup --targetdir=build/bin
           weston --no-config --socket=wl-test-env --backend=headless &
