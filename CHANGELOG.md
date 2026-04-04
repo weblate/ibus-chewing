@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [v2.2.0] - Unreleased
 
-- test: disable a test broken by libchewing 0.11.x
+- chewing: only switch mode if not in candidate window when handle keypad keys.
 - ci: run weston in background so test exit code are captured
 
 ## [v2.1.7] - 2025-09-06

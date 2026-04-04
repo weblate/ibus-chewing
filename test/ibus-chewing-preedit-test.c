@@ -781,8 +781,6 @@ void test_kp_selecting() {
 
     TEST_CASE_INIT();
 
-    // broken in libchewing 0.11.x
-#if CHEWING_VERSION_MINOR != 11
     key_press_from_key_sym(IBUS_KP_1, IBUS_CONTROL_MASK);
     g_assert(ibus_chewing_pre_edit_has_flag(self, FLAG_TABLE_SHOW));
     key_press_from_key_sym(IBUS_KP_2, 0);
@@ -791,7 +789,6 @@ void test_kp_selecting() {
     key_press_from_key_sym(IBUS_KP_1, IBUS_CONTROL_MASK);
     key_press_from_key_sym(IBUS_KP_1, 0);
     assert_outgoing_pre_edit("", "※…");
-#endif
     //  TODO: need to check if selkeys are 1234567890
 }
 

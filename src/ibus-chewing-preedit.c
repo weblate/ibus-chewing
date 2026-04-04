@@ -321,15 +321,20 @@ EventResponse self_handle_num_keypad(IBusChewingPreEdit *self, KSym kSym,
         return event_process_or_ignore(!chewing_handle_CtrlNum(self->context, kSymEquiv));
     }
 
-    /* maskedMod = 0 */
-    /* switch to eng-mode temporary */
-    gint origChiEngMode = chewing_get_ChiEngMode(self->context);
+    EventResponse response;
+    if (chewing_cand_TotalChoice(self->context) > 0) {
+        response = self_handle_key_sym_default(self, kSymEquiv, unmaskedMod);
+    } else {
+        /* maskedMod = 0 */
+        /* switch to eng-mode temporary */
+        gint origChiEngMode = chewing_get_ChiEngMode(self->context);
 
-    ibus_chewing_pre_edit_set_chi_eng_mode(self, FALSE);
+        ibus_chewing_pre_edit_set_chi_eng_mode(self, FALSE);
 
-    EventResponse response = self_handle_key_sym_default(self, kSymEquiv, unmaskedMod);
+        response = self_handle_key_sym_default(self, kSymEquiv, unmaskedMod);
 
-    chewing_set_ChiEngMode(self->context, origChiEngMode);
+        chewing_set_ChiEngMode(self->context, origChiEngMode);
+    }
 
     return response;
 }
