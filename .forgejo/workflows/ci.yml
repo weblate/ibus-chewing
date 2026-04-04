@@ -26,11 +26,10 @@ jobs:
           cmake --build build -t install --verbose
 
       - name: Test
-        env:
-          XDG_RUNTIME_DIR: /tmp
         run: |
           glib-compile-schemas src/setup --targetdir=build/bin
-          weston -Bheadless -- ctest --test-dir build --verbose
+          weston --no-config --socket=wl-test-env --backend=headless &
+          WAYLAND_DISPLAY=wl-test-env ctest --test-dir build --verbose
 
   build-meson:
     runs-on: fedora-latest
@@ -51,7 +50,8 @@ jobs:
         env:
           XDG_RUNTIME_DIR: /tmp
         run: |
-          weston -Bheadless -- meson test -C build --print-errorlogs
+          weston --no-config --socket=wl-test-env --backend=headless &
+          WAYLAND_DISPLAY=wl-test-env meson test -C build --print-errorlogs
 
   coverage:
     runs-on: fedora-latest
@@ -86,7 +86,8 @@ jobs:
         run: |
           source "$HOME/.cargo/env"
           glib-compile-schemas src/setup --targetdir=build/bin
-          weston -Bheadless -- ctest --test-dir build --verbose
+          weston --no-config --socket=wl-test-env --backend=headless &
+          WAYLAND_DISPLAY=wl-test-env ctest --test-dir build --verbose
           ./grcov . -s . -b . --keep-only 'src/*' --llvm  -t markdown >> $GITHUB_STEP_SUMMARY
 
       # - name: Upload coverage reports to Codecov
@@ -112,7 +113,8 @@ jobs:
         env:
           XDG_RUNTIME_DIR: /tmp
         run: |
-          weston -Bheadless -- meson test -C build --print-errorlogs
+          weston --no-config --socket=wl-test-env --backend=headless &
+          WAYLAND_DISPLAY=wl-test-env meson test -C build --print-errorlogs
           ninja -C build coverage-xml
 
       # - name: Upload coverage reports to Codecov
