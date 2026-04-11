@@ -127,18 +127,15 @@ static void ibus_chewing_engine_finalize(GObject *gobject) {
     g_clear_object(&self->AlnumSize);
     g_clear_object(&self->setup_prop);
     g_clear_object(&self->prop_list);
-    g_free(self->prop_kb_type);
-    self->prop_kb_type = NULL;
-    g_free(self->prop_sel_keys);
-    self->prop_sel_keys = NULL;
-    g_free(self->prop_default_english_case);
-    self->prop_default_english_case = NULL;
-    g_free(self->prop_chi_eng_mode_toggle);
-    self->prop_chi_eng_mode_toggle = NULL;
-    g_free(self->prop_sync_caps_lock);
-    self->prop_sync_caps_lock = NULL;
-    g_free(self->prop_conversion_engine);
-    self->prop_conversion_engine = NULL;
+    g_clear_object(&self->keymap_us);
+    
+    g_clear_pointer(&self->prop_kb_type, g_free);
+    g_clear_pointer(&self->prop_sel_keys, g_free);
+    g_clear_pointer(&self->prop_default_english_case, g_free);
+    g_clear_pointer(&self->prop_chi_eng_mode_toggle, g_free);
+    g_clear_pointer(&self->prop_sync_caps_lock, g_free);
+    g_clear_pointer(&self->prop_conversion_engine, g_free);
+    
     G_OBJECT_CLASS(ibus_chewing_engine_parent_class)->finalize(gobject);
 }
 
