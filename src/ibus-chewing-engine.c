@@ -400,29 +400,54 @@ static void ibus_chewing_engine_class_init(IBusChewingEngineClass *klass) {
 
 #define bind_settings(key) g_settings_bind(settings, key, self, key, G_SETTINGS_BIND_DEFAULT)
 
-static void ibus_chewing_engine_init(IBusChewingEngine *self) {
-    self->InputMode_label_chi =
+/* The engine is frequently initialized and finalized when switching input methods. 
+ * To save memory and ensure a smooth experience, we use static objects for UI text 
+ * to avoid repeated allocations. */
+static IBusText *st_InputMode_label_chi, *st_InputMode_label_eng, *st_InputMode_tooltip, \
+                *st_InputMode_symbol_chi, *st_InputMode_symbol_eng, *st_AlnumSize_label_full, \
+                *st_AlnumSize_label_half, *st_AlnumSize_tooltip, *st_AlnumSize_symbol_full, \
+                *st_AlnumSize_symbol_half, *st_setup_prop_label, *st_setup_prop_tooltip, \
+                *st_setup_prop_symbol, *st_emptyText;
+
+static gpointer ibus_chewing_init_static_labels(gpointer user_data) {
+    // To match the signature required by g_once() below
+    (void)user_data;
+
+    // Newly created IBusText is floating; sink it to claim ownership and prevent auto-release.
+    st_InputMode_label_chi = 
         g_object_ref_sink(ibus_text_new_from_static_string(_("Switch to Alphanumeric Mode")));
-    self->InputMode_label_eng =
+    st_InputMode_label_eng = 
         g_object_ref_sink(ibus_text_new_from_static_string(_("Switch to Chinese Mode")));
-    self->InputMode_tooltip = g_object_ref_sink(
-        ibus_text_new_from_static_string(_("Click to toggle Chinese/Alphanumeric Mode")));
-    self->InputMode_symbol_chi = g_object_ref_sink(ibus_text_new_from_static_string("中"));
-    self->InputMode_symbol_eng = g_object_ref_sink(ibus_text_new_from_static_string("英"));
-    self->AlnumSize_label_full =
+    st_InputMode_tooltip = 
+        g_object_ref_sink(ibus_text_new_from_static_string(_("Click to toggle Chinese/Alphanumeric Mode")));
+    st_InputMode_symbol_chi = 
+        g_object_ref_sink(ibus_text_new_from_static_string("中"));
+    st_InputMode_symbol_eng = 
+        g_object_ref_sink(ibus_text_new_from_static_string("英"));
+    st_AlnumSize_label_full = 
         g_object_ref_sink(ibus_text_new_from_static_string(_("Fullwidth Form")));
-    self->AlnumSize_label_half =
+    st_AlnumSize_label_half = 
         g_object_ref_sink(ibus_text_new_from_static_string(_("Halfwidth Form")));
-    self->AlnumSize_tooltip = g_object_ref_sink(
-        ibus_text_new_from_static_string(_("Click to toggle Halfwidth/Fullwidth Form")));
-    self->AlnumSize_symbol_full = g_object_ref_sink(ibus_text_new_from_static_string("全"));
-    self->AlnumSize_symbol_half = g_object_ref_sink(ibus_text_new_from_static_string("半"));
-    self->setup_prop_label =
+    st_AlnumSize_tooltip = 
+        g_object_ref_sink(ibus_text_new_from_static_string(_("Click to toggle Halfwidth/Fullwidth Form")));
+    st_AlnumSize_symbol_full = 
+        g_object_ref_sink(ibus_text_new_from_static_string("全"));
+    st_AlnumSize_symbol_half = 
+        g_object_ref_sink(ibus_text_new_from_static_string("半"));
+    st_setup_prop_label = 
         g_object_ref_sink(ibus_text_new_from_static_string(_("IBus-Chewing Preferences")));
-    self->setup_prop_tooltip =
+    st_setup_prop_tooltip = 
         g_object_ref_sink(ibus_text_new_from_static_string(_("Click to configure IBus-Chewing")));
-    self->setup_prop_symbol = g_object_ref_sink(ibus_text_new_from_static_string("訂"));
-    self->emptyText = g_object_ref_sink(ibus_text_new_from_static_string(""));
+    st_setup_prop_symbol = 
+        g_object_ref_sink(ibus_text_new_from_static_string("訂"));
+    st_emptyText = 
+        g_object_ref_sink(ibus_text_new_from_static_string(""));    
+    return NULL;
+}
+
+static void ibus_chewing_engine_init(IBusChewingEngine *self) {
+    static GOnce labels_once = G_ONCE_INIT;
+    g_once(&labels_once, ibus_chewing_init_static_labels, NULL);
 
     self->preEditText = NULL;
     self->auxText = NULL;
@@ -431,16 +456,19 @@ static void ibus_chewing_engine_init(IBusChewingEngine *self) {
     self->capabilite = 0;
     self->pending_notify_chinese_english_mode = FALSE;
     self->pending_notify_fullwidth_mode = FALSE;
+
+    // Newly created IBusProperty is floating; sink it to claim ownership and prevent auto-release.
     self->InputMode = g_object_ref_sink(
-        ibus_property_new("InputMode", PROP_TYPE_NORMAL, self->InputMode_label_chi, NULL,
-                          self->InputMode_tooltip, TRUE, TRUE, PROP_STATE_UNCHECKED, NULL));
+        ibus_property_new("InputMode", PROP_TYPE_NORMAL, st_InputMode_label_chi, NULL, 
+                          st_InputMode_tooltip, TRUE, TRUE, PROP_STATE_UNCHECKED, NULL));
     self->AlnumSize = g_object_ref_sink(
-        ibus_property_new("AlnumSize", PROP_TYPE_NORMAL, self->AlnumSize_label_half, NULL,
-                          self->AlnumSize_tooltip, TRUE, TRUE, PROP_STATE_UNCHECKED, NULL));
+        ibus_property_new("AlnumSize", PROP_TYPE_NORMAL, st_AlnumSize_label_half, NULL, 
+                          st_AlnumSize_tooltip, TRUE, TRUE, PROP_STATE_UNCHECKED, NULL));
     self->setup_prop = g_object_ref_sink(
-        ibus_property_new("setup_prop", PROP_TYPE_NORMAL, self->setup_prop_label, NULL,
-                          self->setup_prop_tooltip, TRUE, TRUE, PROP_STATE_UNCHECKED, NULL));
+        ibus_property_new("setup_prop", PROP_TYPE_NORMAL, st_setup_prop_label, NULL, 
+                          st_setup_prop_tooltip, TRUE, TRUE, PROP_STATE_UNCHECKED, NULL));
     self->prop_list = g_object_ref_sink(ibus_prop_list_new());
+
     self->keymap_us = ibus_keymap_get("us");
     g_info("init() %sinitialized", (self->statusFlags & ENGINE_FLAG_INITIALIZED) ? "" : "un");
     if (self->statusFlags & ENGINE_FLAG_INITIALIZED) {
@@ -448,7 +476,6 @@ static void ibus_chewing_engine_init(IBusChewingEngine *self) {
     }
 
     self->icPreEdit = ibus_chewing_pre_edit_new();
-
     g_assert(self->icPreEdit);
 
     self->icPreEdit->engine = IBUS_ENGINE(self);
@@ -548,13 +575,13 @@ void ibus_chewing_engine_refresh_property(IBusChewingEngine *self,
 
             ibus_property_set_label(self->InputMode,
                                     ibus_chewing_pre_edit_get_chi_eng_mode(self->icPreEdit)
-                                        ? self->InputMode_label_chi
-                                        : self->InputMode_label_eng);
+                                        ? st_InputMode_label_chi
+                                        : st_InputMode_label_eng);
 
             ibus_property_set_symbol(self->InputMode,
                                      ibus_chewing_pre_edit_get_chi_eng_mode(self->icPreEdit)
-                                         ? self->InputMode_symbol_chi
-                                         : self->InputMode_symbol_eng);
+                                         ? st_InputMode_symbol_chi
+                                         : st_InputMode_symbol_eng);
 
 #ifndef UNIT_TEST
             ibus_engine_update_property(IBUS_ENGINE(self), self->InputMode);
@@ -563,13 +590,13 @@ void ibus_chewing_engine_refresh_property(IBusChewingEngine *self,
         } else if (g_strcmp0(prop_name, "AlnumSize") == 0) {
 
             ibus_property_set_label(self->AlnumSize, chewing_get_ShapeMode(self->icPreEdit->context)
-                                                         ? self->AlnumSize_label_full
-                                                         : self->AlnumSize_label_half);
+                                                         ? st_AlnumSize_label_full
+                                                         : st_AlnumSize_label_half);
 
             ibus_property_set_symbol(self->AlnumSize,
                                      chewing_get_ShapeMode(self->icPreEdit->context)
-                                         ? self->AlnumSize_symbol_full
-                                         : self->AlnumSize_symbol_half);
+                                         ? st_AlnumSize_symbol_full
+                                         : st_AlnumSize_symbol_half);
 
             if (self->statusFlags & ENGINE_FLAG_PROPERTIES_REGISTERED) {
 #ifndef UNIT_TEST
@@ -578,7 +605,7 @@ void ibus_chewing_engine_refresh_property(IBusChewingEngine *self,
             }
 
         } else if (g_strcmp0(prop_name, "setup_prop") == 0) {
-            ibus_property_set_symbol(self->setup_prop, self->setup_prop_symbol);
+            ibus_property_set_symbol(self->setup_prop, st_setup_prop_symbol);
 #ifndef UNIT_TEST
             ibus_engine_update_property(IBUS_ENGINE(self), self->setup_prop);
 #endif
@@ -735,7 +762,7 @@ void ibus_chewing_engine_reset(IBusEngine *engine) {
 
     ibus_engine_hide_auxiliary_text(engine);
     ibus_engine_hide_lookup_table(engine);
-    ibus_engine_update_preedit_text(engine, self->emptyText, 0, FALSE);
+    ibus_engine_update_preedit_text(engine, st_emptyText, 0, FALSE);
 
 #endif
 }
@@ -899,9 +926,7 @@ void update_pre_edit_text(IBusChewingEngine *self) {
 void refresh_aux_text(IBusChewingEngine *self) {
     g_info("refresh_aux_text()");
 
-    if (self->auxText != NULL) {
-        g_object_unref(self->auxText);
-    }
+    g_clear_object(&self->auxText);
 
     /* Make auxText (text to be displayed in auxiliary
      * candidate window). Use auxText to show messages
@@ -932,9 +957,8 @@ void refresh_aux_text(IBusChewingEngine *self) {
         self->auxText =
             g_object_ref_sink(ibus_text_new_from_printf("(%i/%i)", currentPage, TotalPage));
     } else {
-        /* clear out auxText, otherwise it will be
-         * displayed continually. */
-        self->auxText = g_object_ref_sink(ibus_text_new_from_static_string(""));
+        /* clear out auxText, otherwise it will be displayed continually. */
+        self->auxText = g_object_ref_sink(st_emptyText);
     }
 }
 

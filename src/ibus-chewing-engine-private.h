@@ -67,21 +67,6 @@ struct _IBusChewingEngine {
     char *prop_conversion_engine;
     gboolean prop_ibus_use_system_layout;
     gboolean prop_notify_mode_change;
-
-    IBusText *InputMode_label_chi;
-    IBusText *InputMode_label_eng;
-    IBusText *InputMode_tooltip;
-    IBusText *InputMode_symbol_chi;
-    IBusText *InputMode_symbol_eng;
-    IBusText *AlnumSize_label_full;
-    IBusText *AlnumSize_label_half;
-    IBusText *AlnumSize_tooltip;
-    IBusText *AlnumSize_symbol_full;
-    IBusText *AlnumSize_symbol_half;
-    IBusText *setup_prop_label;
-    IBusText *setup_prop_tooltip;
-    IBusText *setup_prop_symbol;
-    IBusText *emptyText;
 };
 
 void ibus_chewing_engine_handle_Default(IBusChewingEngine *self, guint keyval,
