@@ -113,49 +113,30 @@ static void start_component(void) {
     ibus_main();
 }
 
-const char *locale_env_strings[] = {"LC_ALL", "LANG", "LANGUAGE", "GDM_LANG", NULL};
-
-void determine_locale() {
-#ifndef STRING_BUFFER_SIZE
-#define STRING_BUFFER_SIZE 100
-#endif
-    gchar *localePtr = NULL;
-    gchar localeStr[STRING_BUFFER_SIZE];
-    int i;
-
-    for (i = 0; locale_env_strings[i] != NULL; i++) {
-        if (getenv(locale_env_strings[i])) {
-            localePtr = getenv(locale_env_strings[i]);
-            break;
-        }
-    }
-    if (!localePtr) {
-        localePtr = "en_US.utf8";
-    }
-    /* Use UTF8 as charset unconditionally */
-    for (i = 0; localePtr[i] != '\0'; i++) {
-        if (localePtr[i] == '.')
-            break;
-        localeStr[i] = localePtr[i];
-    }
-    localeStr[i] = '\0';
-    g_strlcat(localeStr, ".utf8", STRING_BUFFER_SIZE);
-#undef STRING_BUFFER_SIZE
-    setlocale(LC_ALL, localeStr);
-    g_info("determine_locale %s", localeStr);
-}
-
 int main(gint argc, gchar *argv[]) {
     GError *error = NULL;
     GOptionContext *context;
 
+    setlocale(LC_ALL, "");
+
+    /* Force UTF-8 to ensure correct string handling on legacy systems. */
+    if (!g_get_charset(NULL)) {
+        g_warning("Non-UTF-8 locale detected, forcing safe fallback");
+        if (setlocale(LC_ALL, "C.UTF-8") == NULL) {
+            setlocale(LC_ALL, "en_US.UTF-8");
+        }
+        /* Re-verify because setlocale() success != GLib charset detection success. */
+        if (!g_get_charset(NULL)) {
+            g_error("UTF-8 is not available in current locale environment, aborting");
+        }
+    }
+
+    /* Must be called after setlocale() to ensure correct encoding and GTK behavior */
     gtk_init();
 
     /* Init i18n messages */
-    setlocale(LC_ALL, "");
     bindtextdomain(QUOTE_ME(PROJECT_NAME), QUOTE_ME(DATA_DIR) "/locale");
     textdomain(QUOTE_ME(PROJECT_NAME));
-    determine_locale();
 
     context = g_option_context_new("- ibus chewing engine component");
 
