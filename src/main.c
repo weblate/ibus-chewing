@@ -114,9 +114,6 @@ static void start_component(void) {
 }
 
 int main(gint argc, gchar *argv[]) {
-    GError *error = NULL;
-    GOptionContext *context;
-
     setlocale(LC_ALL, "");
 
     /* Force UTF-8 to ensure correct string handling on legacy systems. */
@@ -127,7 +124,8 @@ int main(gint argc, gchar *argv[]) {
         }
         /* Re-verify because setlocale() success != GLib charset detection success. */
         if (!g_get_charset(NULL)) {
-            g_error("UTF-8 is not available in current locale environment, aborting");
+            g_warning("UTF-8 is not available in current locale environment, aborting");
+            return 1;
         }
     }
 
@@ -138,16 +136,16 @@ int main(gint argc, gchar *argv[]) {
     bindtextdomain(QUOTE_ME(PROJECT_NAME), QUOTE_ME(DATA_DIR) "/locale");
     textdomain(QUOTE_ME(PROJECT_NAME));
 
+    g_autoptr(GError) error = NULL;
+    g_autoptr(GOptionContext) context = NULL;
     context = g_option_context_new("- ibus chewing engine component");
 
     g_option_context_add_main_entries(context, entries, QUOTE_ME(PROJECT_NAME));
 
     if (!g_option_context_parse(context, &argc, &argv, &error)) {
-        g_print("Option parsing failed: %s\n", error->message);
-        exit(-1);
+        g_printerr("Option parsing failed: %s\n", error->message);
+        return 1;
     }
-
-    g_option_context_free(context);
 
     g_autoptr(GSettings) settings = g_settings_new(QUOTE_ME(PROJECT_SCHEMA_ID));
     g_autoptr(GVariant) plain_zhuyin = g_settings_get_user_value(settings, "plain-zhuyin");
